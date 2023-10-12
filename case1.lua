@@ -1,3 +1,3 @@
 -- start 10 "restless wife agent"
 
-startAgent("restlesWife", 10)
+startAgent( "agents/restlesWife.lua", 300);

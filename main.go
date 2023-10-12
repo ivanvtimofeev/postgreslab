@@ -2,26 +2,70 @@ package main
 
 import (
 	"fmt"
+	"sync"
+	"time"
 
 	"github.com/Shopify/go-lua"
 )
+
+var wg sync.WaitGroup
 
 func main() {
 	fmt.Println("Hello")
 
 	l := lua.NewState()
+
+	// Add functions to lua
 	registerStartAgent(l)
+
 	lua.OpenLibraries(l)
+
 	if err := lua.DoFile(l, "case1.lua"); err != nil {
+		panic(err)
+	}
+
+	// time.Sleep((20 * time.Second))
+	wg.Wait()
+}
+
+func startAgent(agentName string) {
+	fmt.Println("StartAgent")
+	l := lua.NewState()
+	registerExecQuery(l)
+	registerSleep(l)
+	lua.OpenLibraries(l)
+	if err := lua.DoFile(l, agentName); err != nil {
 		panic(err)
 	}
 }
 
 func registerStartAgent(l *lua.State) {
 	l.Register("startAgent", func(l *lua.State) int {
-		agentsName := lua.CheckString(l, 1)
+		agentName := lua.CheckString(l, 1)
 		agentsNo := lua.CheckNumber(l, 2)
-		fmt.Println(agentsName, agentsNo)
+		fmt.Println(agentName, agentsNo)
+		for i := 1; i <= int(agentsNo); i++ {
+			fmt.Println("Before start agent", i)
+			wg.Add(1)
+			go startAgent(agentName)
+		}
+		return 0
+	})
+}
+
+func registerSleep(l *lua.State) {
+	l.Register("sleep", func(l *lua.State) int {
+		t := lua.CheckNumber(l, 1)
+		fmt.Printf("Agent sleep for  %d seconds\n", int(t))
+		time.Sleep(time.Duration(t) * time.Second)
+		return 0
+	})
+}
+
+func registerExecQuery(l *lua.State) {
+	l.Register("execQuery", func(l *lua.State) int {
+		query := lua.CheckString(l, 1)
+		fmt.Println(query)
 		return 0
 	})
 }
