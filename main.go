@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"database/sql"
+
 	"github.com/Shopify/go-lua"
 	_ "github.com/lib/pq"
 	"gopkg.in/yaml.v3"
@@ -17,7 +18,7 @@ var wg sync.WaitGroup
 type ConfDatabase struct {
 	Host     string `yaml:"host"`
 	Port     string `yaml:"port"`
-	Database string `yaml:"databse"`
+	Database string `yaml:"database"`
 	Schema   string `yaml:"schema"`
 	User     string `yaml:"user"`
 	Password string `yaml:"password"`
