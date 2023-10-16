@@ -28,18 +28,7 @@ type Config struct {
 
 func main() {
 
-	// Read config
-	buf, err := ioutil.ReadFile("config.yaml")
-	if err != nil {
-		panic(err)
-	}
-
-	config := &Config{}
-	err = yaml.Unmarshal(buf, config)
-	if err != nil {
-		panic(err)
-	}
-
+	config := readConfig()
 	fmt.Printf("%#v", config)
 
 	// Start base scenario
@@ -51,12 +40,27 @@ func main() {
 
 	lua.OpenLibraries(l)
 
-	if err = lua.DoFile(l, "case1.lua"); err != nil {
+	if err := lua.DoFile(l, "case1.lua"); err != nil {
 		panic(err)
 	}
 
 	// time.Sleep((20 * time.Second))
 	wg.Wait()
+}
+
+func readConfig() *Config {
+	// Read config
+	buf, err := ioutil.ReadFile("config.yaml")
+	if err != nil {
+		panic(err)
+	}
+
+	config := &Config{}
+	err = yaml.Unmarshal(buf, config)
+	if err != nil {
+		panic(err)
+	}
+	return config
 }
 
 func startAgent(agentName string) {
