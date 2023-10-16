@@ -6,7 +6,9 @@ import (
 	"sync"
 	"time"
 
+	"database/sql"
 	"github.com/Shopify/go-lua"
+	_ "github.com/lib/pq"
 	"gopkg.in/yaml.v3"
 )
 
@@ -26,9 +28,16 @@ type Config struct {
 	Text     string       `yaml:"text"`
 }
 
+var db *sql.DB
+
 func main() {
 
 	config := readConfig()
+	err := connectDatabase(config)
+	if err != nil {
+		panic(err)
+	}
+
 	fmt.Printf("%#v", config)
 
 	// Start base scenario
@@ -46,6 +55,23 @@ func main() {
 
 	// time.Sleep((20 * time.Second))
 	wg.Wait()
+}
+
+func connectDatabase(config *Config) error {
+	connStr := "postgres://" + config.Database.User + ":" + config.Database.Password + "@" + config.Database.Host + "/" + config.Database.Database + "?sslmode=disable"
+	db, err := sql.Open("postgres", connStr)
+
+	if err != nil {
+		return err
+	}
+
+	if err = db.Ping(); err != nil {
+		return err
+	}
+	// this will be printed in the terminal, confirming the connection to the database
+	fmt.Println("The database is connected")
+
+	return nil
 }
 
 func readConfig() *Config {
