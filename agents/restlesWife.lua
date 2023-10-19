@@ -6,5 +6,5 @@ while true do
 
   sleep(p);
 
-  execQuery("SELECT * FROM timetable");
+  execQuery("SELECT * FROM flights WHERE departure_airport = (SELECT departure_airport FROM flights GROUP BY departure_airport ORDER BY random() limit 1) ORDER BY scheduled_departure DESC LIMIT 30");
 end
