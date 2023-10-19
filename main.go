@@ -6,10 +6,8 @@ import (
 	"sync"
 	"time"
 
-	"database/sql"
-
 	"github.com/Shopify/go-lua"
-	_ "github.com/lib/pq"
+	"github.com/jackc/pgx/v5"
 	"gopkg.in/yaml.v3"
 )
 
@@ -29,12 +27,12 @@ type Config struct {
 	Text     string       `yaml:"text"`
 }
 
-var db *sql.DB
+var conn *pgx.Conn
 
 func main() {
 
 	config := readConfig()
-	err := connectDatabase(config)
+	conn, err := connectDatabase(config)
 	if err != nil {
 		panic(err)
 	}
@@ -58,21 +56,9 @@ func main() {
 	wg.Wait()
 }
 
-func connectDatabase(config *Config) error {
+func connectDatabase(config *Config) (*pgx.Conn, error) {
 	connStr := "postgres://" + config.Database.User + ":" + config.Database.Password + "@" + config.Database.Host + "/" + config.Database.Database + "?sslmode=disable"
-	db, err := sql.Open("postgres", connStr)
-
-	if err != nil {
-		return err
-	}
-
-	if err = db.Ping(); err != nil {
-		return err
-	}
-	// this will be printed in the terminal, confirming the connection to the database
-	fmt.Println("The database is connected")
-
-	return nil
+	return pgx.Connect(context.Background(), connStr)
 }
 
 func readConfig() *Config {
