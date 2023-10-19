@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"sync"
@@ -32,7 +33,7 @@ var conn *pgx.Conn
 func main() {
 
 	config := readConfig()
-	conn, err := connectDatabase(config)
+	_, err := connectDatabase(config)
 	if err != nil {
 		panic(err)
 	}
