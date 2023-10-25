@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"sync"
 	"time"
 
@@ -28,20 +28,41 @@ type Config struct {
 	Text     string       `yaml:"text"`
 }
 
-var conn *pgx.Conn
-
 func main() {
 
 	config := readConfig()
-	_, err := connectDatabase(config)
+	fmt.Printf("%#v", config)
+
+	conn, err := connectDatabase(config)
 	if err != nil {
 		panic(err)
 	}
+	defer conn.Close(context.Background())
 
-	fmt.Printf("%#v", config)
+	var greeting string
+	err = conn.QueryRow(context.Background(), "select 'Hello, world!'").Scan(&greeting)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "QueryRow failed: %v\n", err)
+		os.Exit(1)
+	}
 
+	fmt.Println(greeting)
+
+	query := "SELECT flight_id, flight_no, departure_airport, arrival_airport FROM flights WHERE departure_airport = (SELECT departure_airport FROM flights GROUP BY departure_airport ORDER BY random() limit 1) ORDER BY scheduled_departure DESC LIMIT 30;"
+	for i := 1; i < 10000; i++ {
+		rows, err := conn.Query(context.Background(), query)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println("================ iteration ===============")
+		for rows.Next() {
+			rawValues := rows.RawValues()
+			fmt.Println(rawValues)
+		}
+
+	}
+	os.Exit(0)
 	// Start base scenario
-
 	l := lua.NewState()
 
 	// Add functions to lua
@@ -58,13 +79,14 @@ func main() {
 }
 
 func connectDatabase(config *Config) (*pgx.Conn, error) {
-	connStr := "postgres://" + config.Database.User + ":" + config.Database.Password + "@" + config.Database.Host + "/" + config.Database.Database + "?sslmode=disable"
+	connStr := "postgres://" + config.Database.User + ":" + config.Database.Password + "@" + config.Database.Host + ":5432/" + config.Database.Database + "?sslmode=disable"
+	fmt.Println(connStr)
 	return pgx.Connect(context.Background(), connStr)
 }
 
 func readConfig() *Config {
 	// Read config
-	buf, err := ioutil.ReadFile("config.yaml")
+	buf, err := os.ReadFile("config.yaml")
 	if err != nil {
 		panic(err)
 	}
