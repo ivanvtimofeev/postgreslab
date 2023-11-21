@@ -1,3 +1,3 @@
 -- start 10 "restless wife agent"
 
-startAgent( "agents/restlesWife.lua", 2 )
+startAgent( "agents/restlesWife.lua", 70 )

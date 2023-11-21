@@ -28,27 +28,29 @@ type Config struct {
 	Text     string       `yaml:"text"`
 }
 
+var Connection *pgx.Conn
+
 func main() {
 
 	config := readConfig()
 	fmt.Printf("%#v", config)
-
-	conn, err := connectDatabase(config)
+	var err error
+	Connection, err = connectDatabase(config)
 	if err != nil {
 		panic(err)
 	}
-	defer conn.Close(context.Background())
+	defer Connection.Close(context.Background())
 
-	var greeting string
+	/* var greeting string
 	err = conn.QueryRow(context.Background(), "select 'Hello, world!'").Scan(&greeting)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "QueryRow failed: %v\n", err)
 		os.Exit(1)
 	}
 
-	fmt.Println(greeting)
+	fmt.Println(greeting) */
 
-	query := "SELECT flight_id, flight_no, departure_airport, arrival_airport FROM flights WHERE departure_airport = (SELECT departure_airport FROM flights GROUP BY departure_airport ORDER BY random() limit 1) ORDER BY scheduled_departure DESC LIMIT 30;"
+	/* query := "SELECT flight_id, flight_no, departure_airport, arrival_airport FROM flights WHERE departure_airport = (SELECT departure_airport FROM flights GROUP BY departure_airport ORDER BY random() limit 1) ORDER BY scheduled_departure DESC LIMIT 30;"
 	for i := 1; i < 10000; i++ {
 		rows, err := conn.Query(context.Background(), query)
 		if err != nil {
@@ -56,12 +58,12 @@ func main() {
 		}
 		fmt.Println("================ iteration ===============")
 		for rows.Next() {
-			rawValues := rows.RawValues()
-			fmt.Println(rawValues)
+			// rawValues := rows.RawValues()
+			//fmt.Println(rawValues)
 		}
 
 	}
-	os.Exit(0)
+	os.Exit(0) */
 	// Start base scenario
 	l := lua.NewState()
 
@@ -80,7 +82,7 @@ func main() {
 
 func connectDatabase(config *Config) (*pgx.Conn, error) {
 	connStr := "postgres://" + config.Database.User + ":" + config.Database.Password + "@" + config.Database.Host + ":5432/" + config.Database.Database + "?sslmode=disable"
-	fmt.Println(connStr)
+	// fmt.Println(connStr)
 	return pgx.Connect(context.Background(), connStr)
 }
 
@@ -127,8 +129,8 @@ func registerStartAgent(l *lua.State) {
 func registerSleep(l *lua.State) {
 	l.Register("sleep", func(l *lua.State) int {
 		t := lua.CheckNumber(l, 1)
-		fmt.Printf("Agent sleep for  %d seconds\n", int(t))
-		time.Sleep(time.Duration(t) * time.Second)
+		// fmt.Printf("Agent sleep for  %d seconds\n", int(t))
+		time.Sleep(time.Duration(t) * time.Millisecond)
 		return 0
 	})
 }
@@ -136,7 +138,26 @@ func registerSleep(l *lua.State) {
 func registerExecQuery(l *lua.State) {
 	l.Register("execQuery", func(l *lua.State) int {
 		query := lua.CheckString(l, 1)
-		fmt.Println(query)
+
+		// fmt.Println(query)
+		config := readConfig()
+		conn, err := connectDatabase(config)
+		if err != nil {
+			panic(err)
+		}
+		defer conn.Close(context.Background())
+
+		rows, err := conn.Query(context.Background(), query)
+		if err != nil {
+			panic(err)
+		}
+		// fmt.Println("Next: ", rows.Next())
+		_ = rows.RawValues()
+		// fmt.Println("Values: ", rawValues)
+		/*for rows.Next() {
+			rawValues := rows.RawValues()
+			fmt.Println("Values: ", rawValues)
+		}*/
 		return 0
 	})
 }
