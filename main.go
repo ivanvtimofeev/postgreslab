@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/Shopify/go-lua"
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"gopkg.in/yaml.v3"
 )
 
@@ -30,11 +30,23 @@ type Config struct {
 
 // var Connection *pgx.Conn
 var config *Config
+var pool *pgxpool.Pool
 
-func main() {
-
+func init() {
 	config = readConfig()
 	fmt.Printf("%#v", config)
+
+	connStr := "postgres://" + config.Database.User + ":" + config.Database.Password + "@" + config.Database.Host + ":5432/" + config.Database.Database + "?sslmode=disable"
+
+	var err error
+	pool, err = pgxpool.New(context.Background(), connStr)
+
+	if err != nil {
+		panic(err.Error())
+	}
+}
+
+func main() {
 
 	l := lua.NewState()
 
@@ -47,11 +59,6 @@ func main() {
 	}
 
 	wg.Wait()
-}
-
-func connectDatabase(config *Config) (*pgx.Conn, error) {
-	connStr := "postgres://" + config.Database.User + ":" + config.Database.Password + "@" + config.Database.Host + ":5432/" + config.Database.Database + "?sslmode=disable"
-	return pgx.Connect(context.Background(), connStr)
 }
 
 func readConfig() *Config {
@@ -105,11 +112,11 @@ func registerExecQuery(l *lua.State) {
 	l.Register("execQuery", func(l *lua.State) int {
 		query := lua.CheckString(l, 1)
 
-		conn, err := connectDatabase(config)
+		conn, err := pool.Acquire(context.Background())
 		if err != nil {
 			panic(err)
 		}
-		defer conn.Close(context.Background())
+		defer conn.Release()
 
 		rows, err := conn.Query(context.Background(), query)
 		if err != nil {
