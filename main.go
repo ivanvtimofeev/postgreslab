@@ -87,8 +87,15 @@ func registerStartAgentTimetable(l *lua.LState) {
 	l.Register("startAgentTimetable", func(l *lua.LState) int {
 		agentName := l.CheckString(1)
 		agentTimetable := l.CheckTable(2)
+		fmt.Printf("\n")
 		fmt.Println(agentName)
-		fmt.Printf("%+v", *agentTimetable)
+		agentTimetable.ForEach(func(key lua.LValue, value lua.LValue) {
+			fmt.Printf("step = %v  \n", key)
+			value.(*lua.LTable).ForEach(func(time, amount lua.LValue) {
+				fmt.Printf("step = %v, time = %v, amount = %v \n", key, time, amount)
+			})
+		})
+		// fmt.Printf("%+v", *agentTimetable)
 		return 0
 	})
 }
