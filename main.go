@@ -50,6 +50,7 @@ func main() {
 	l := lua.NewState()
 
 	registerStartAgent(l)
+	registerStartAgentTimetable(l)
 
 	if err := l.DoFile("case1.lua"); err != nil {
 		panic(err)
@@ -80,6 +81,16 @@ func startAgent(agentName string) {
 	if err := l.DoFile(agentName); err != nil {
 		panic(err)
 	}
+}
+
+func registerStartAgentTimetable(l *lua.LState) {
+	l.Register("startAgentTimetable", func(l *lua.LState) int {
+		agentName := l.CheckString(1)
+		agentTimetable := l.CheckTable(2)
+		fmt.Println(agentName)
+		fmt.Printf("%+v", *agentTimetable)
+		return 0
+	})
 }
 
 func registerStartAgent(l *lua.LState) {
