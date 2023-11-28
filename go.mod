@@ -3,8 +3,8 @@ module steigenhaus.com/loader
 go 1.19
 
 require (
-	github.com/Shopify/go-lua v0.0.0-20221004153744-91867de107cf
 	github.com/jackc/pgx/v5 v5.5.0
+	github.com/yuin/gopher-lua v1.1.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 

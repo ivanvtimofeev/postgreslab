@@ -7,8 +7,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Shopify/go-lua"
 	"github.com/jackc/pgx/v5/pgxpool"
+	lua "github.com/yuin/gopher-lua"
 	"gopkg.in/yaml.v3"
 )
 
@@ -28,7 +28,6 @@ type Config struct {
 	Text     string       `yaml:"text"`
 }
 
-// var Connection *pgx.Conn
 var config *Config
 var pool *pgxpool.Pool
 
@@ -52,9 +51,7 @@ func main() {
 
 	registerStartAgent(l)
 
-	lua.OpenLibraries(l)
-
-	if err := lua.DoFile(l, "case1.lua"); err != nil {
+	if err := l.DoFile("case1.lua"); err != nil {
 		panic(err)
 	}
 
@@ -80,16 +77,15 @@ func startAgent(agentName string) {
 	l := lua.NewState()
 	registerExecQuery(l)
 	registerSleep(l)
-	lua.OpenLibraries(l)
-	if err := lua.DoFile(l, agentName); err != nil {
+	if err := l.DoFile(agentName); err != nil {
 		panic(err)
 	}
 }
 
-func registerStartAgent(l *lua.State) {
-	l.Register("startAgent", func(l *lua.State) int {
-		agentName := lua.CheckString(l, 1)
-		agentsNo := lua.CheckNumber(l, 2)
+func registerStartAgent(l *lua.LState) {
+	l.Register("startAgent", func(l *lua.LState) int {
+		agentName := l.CheckString(1)
+		agentsNo := l.CheckNumber(2)
 		fmt.Println(agentName, agentsNo)
 		for i := 1; i <= int(agentsNo); i++ {
 			fmt.Println("Before start agent", i)
@@ -100,17 +96,17 @@ func registerStartAgent(l *lua.State) {
 	})
 }
 
-func registerSleep(l *lua.State) {
-	l.Register("sleep", func(l *lua.State) int {
-		t := lua.CheckNumber(l, 1)
+func registerSleep(l *lua.LState) {
+	l.Register("sleep", func(l *lua.LState) int {
+		t := l.CheckNumber(1)
 		time.Sleep(time.Duration(t) * time.Millisecond)
 		return 0
 	})
 }
 
-func registerExecQuery(l *lua.State) {
-	l.Register("execQuery", func(l *lua.State) int {
-		query := lua.CheckString(l, 1)
+func registerExecQuery(l *lua.LState) {
+	l.Register("execQuery", func(l *lua.LState) int {
+		query := l.CheckString(1)
 
 		conn, err := pool.Acquire(context.Background())
 		if err != nil {
