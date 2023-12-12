@@ -3,4 +3,4 @@
 -- startAgent( "agents/restlesWife.lua", 70 )
 
 
-startAgentTimetable( "agents/restlesWife.lua", {{"20s",10},{"10s",30},{"20s",10}} )
+startAgentTimetable( "agents/restlesWife.lua", {{"4s",10},{"1s",30},{"4s",10}} )

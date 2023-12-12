@@ -139,7 +139,14 @@ func registerStartAgentTimetable(l *lua.LState) {
 
 		fmt.Println("Timetable passed from startAgentTimetable lua call:")
 		fmt.Println(timetable)
-		// fmt.Printf("%+v", *agentTimetable)
+
+		// iterate over timetable - step by step
+		for _, step := range timetable {
+			fmt.Println("step")
+			fmt.Println(step)
+			time.Sleep(time.Duration(step.Duration) * time.Second)
+		}
+
 		return 0
 	})
 }
