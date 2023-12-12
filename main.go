@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strconv"
 	"sync"
 	"time"
 
@@ -26,6 +27,11 @@ type ConfDatabase struct {
 type Config struct {
 	Database ConfDatabase `yaml:"database"`
 	Text     string       `yaml:"text"`
+}
+
+type TimetableRecord struct {
+	Duration     int32 `yaml:"duration"` // phase duration in milliseconds
+	AgentsAmount int32 `yaml:"agentsAmount"`
 }
 
 var config *Config
@@ -83,18 +89,56 @@ func startAgent(agentName string) {
 	}
 }
 
+func parseDuration(dur string) int32 {
+	units := dur[len(dur)-1:]
+	var multipler int
+	if units == "s" {
+		multipler = 1
+	} else if units == "m" {
+		multipler = 60
+	} else if units == "h" {
+		multipler = 60 * 60
+	} else {
+		panic("Uncnown units " + units)
+	}
+
+	digit, err := strconv.Atoi(dur[:len(dur)-1])
+	if err != nil {
+		panic("Error convert duration " + err.Error())
+	}
+
+	return int32(digit) * int32(multipler)
+}
+
 func registerStartAgentTimetable(l *lua.LState) {
 	l.Register("startAgentTimetable", func(l *lua.LState) int {
+		timetable := []TimetableRecord{}
+
 		agentName := l.CheckString(1)
 		agentTimetable := l.CheckTable(2)
 		fmt.Printf("\n")
 		fmt.Println(agentName)
-		agentTimetable.ForEach(func(key lua.LValue, value lua.LValue) {
-			fmt.Printf("step = %v  \n", key)
-			value.(*lua.LTable).ForEach(func(time, amount lua.LValue) {
-				fmt.Printf("step = %v, time = %v, amount = %v \n", key, time, amount)
+		agentTimetable.ForEach(func(key_str lua.LValue, value_str lua.LValue) { // Iterate over table rows
+			value_str.(*lua.LTable).ForEach(func(key_col lua.LValue, value_col lua.LValue) {
+				if key_col.String() == "1" { // Process Duration
+					timetable = append(timetable, TimetableRecord{
+						0,
+						0,
+					})
+					duration := parseDuration(value_col.String())
+					timetable[len(timetable)-1].Duration = duration
+				} else if key_col.String() == "2" { // Process Workers amount
+					amt, err := strconv.Atoi(value_col.String())
+					if err != nil {
+						panic("amount Conversion error " + err.Error())
+					}
+					timetable[len(timetable)-1].AgentsAmount = int32(amt)
+				}
 			})
 		})
+
+		fmt.Println("Timetable passed from startAgentTimetable lua call:")
+		fmt.Println(timetable)
 		// fmt.Printf("%+v", *agentTimetable)
 		return 0
 	})
